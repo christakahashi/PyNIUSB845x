@@ -1,0 +1,4 @@
+*.h
+*.pyc
+*.dll
+*bkp.py
