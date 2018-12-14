@@ -11,7 +11,7 @@ import numpy as np
 
 # pylint: disable=no-member,invalid-name
 
-ni8451_dll = ctypes.WinDLL("./Ni845x.dll")
+ni8451_dll = ctypes.WinDLL("Ni845x.dll")
 
 with open("nidefs.json",'rb') as jdefs:
   nidefs = json.load(jdefs)
