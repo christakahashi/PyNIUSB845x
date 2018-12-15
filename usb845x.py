@@ -9,13 +9,16 @@ import json
 from ctypes import byref, c_void_p
 import numpy as np
 
+import os
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
 # pylint: disable=no-member,invalid-name
 
 ni8451_dll = ctypes.WinDLL("Ni845x.dll")
 
-with open("nidefs.json",'rb') as jdefs:
+with open(dir_path+"/nidefs.json",'rb') as jdefs:
   nidefs = json.load(jdefs)
-with open("errors.json",'rb') as jerrs:
+with open(dir_path+"/errors.json",'rb') as jerrs:
   nierrors = { int(k):v for k,v in json.load(jerrs).items()}
 
 
@@ -131,6 +134,14 @@ class NI8451(object):
     ni8451_dll.ni845xFindDevice(first_dev,byref(_h),byref(n_devs))
     return first_dev.value
 
+  @staticmethod
+  def StatusToString(code):
+    c = ctypes.c_int32(code)
+    L = ctypes.c_uint32(1024)
+    out = ctypes.create_string_buffer(1024)
+    ni8451_dll.ni845xStatusToString(c,L,out)
+    return repr(out.value)
+
   def is_open(self):
     return self.devh.value!=0
 
@@ -145,7 +156,8 @@ def errck(x):
       err_str = nierrors[x]
     except KeyError:
       err_str = "unknown error."
-    raise Exception("NI error {}: {}".format(x,err_str))
+    #raise Exception("NI error {}: {}".format(x,err_str))
+    raise Exception(NI8451.StatusToString(x))
 
 def gen_i2c_conf_method(mname,cargs):
   """ Generates a call method for Ni function mname. """
@@ -183,7 +195,7 @@ def __main():
   nid = NI8451()
   dev_name = nid.FindFirstDevice()
   led_addr_offset = 0x20 #=port 0 addr
-  led_pin = 21
+  led_pin = 14
   led_pin_addr = led_pin+led_addr_offset
   try:
     nid.Open(dev_name)
@@ -191,7 +203,7 @@ def __main():
     nid.DioSetPortLineDirectionMap(0,0x01)
     nid.DioWritePort(0,0x01)
     #nid.I2cSetPullupEnable(1)
-    iicd = NiI2cCh(nid,0x44)
+    iicd = NiI2cCh(nid,0x41)
 
     #iicd.I2cWrite(np.array([0x0B,0xA8],dtype=np.uint8)) #P12 LED OUT
     iicd.I2cWrite(np.array([0x0D,0xA2],dtype=np.uint8)) #P21 LED OUT
